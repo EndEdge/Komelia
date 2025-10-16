@@ -1,7 +1,10 @@
 package io.github.snd_r.komelia.ui.reader.image.common
 
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -18,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType.Companion.KeyUp
 import androidx.compose.ui.input.key.isAltPressed
@@ -25,9 +29,11 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import kotlin.math.abs
 import io.github.snd_r.komelia.platform.PlatformType.MOBILE
 import io.github.snd_r.komelia.ui.LocalPlatform
 import io.github.snd_r.komelia.ui.LocalWindowState
@@ -222,6 +228,56 @@ fun ReaderControlsOverlay(
                         in 0f..<actionWidth -> leftAction()
                         in actionWidth..actionWidth * 2 -> centerAction()
                         else -> rightAction()
+                    }
+                }
+            }
+            .pointerInput(
+                readingDirection,
+                isSettingsMenuOpen
+            ) {
+                // Handle horizontal swipe gestures for page navigation
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    var totalDrag = Offset.Zero
+                    var isHorizontalSwipe = false
+                    
+                    // Only handle single-finger gestures
+                    if (currentEvent.changes.size == 1) {
+                        drag(down.id) { change ->
+                            val dragDelta = change.positionChange()
+                            totalDrag += dragDelta
+                            
+                            // Determine if this is a horizontal swipe based on initial movement
+                            if (!isHorizontalSwipe && (abs(totalDrag.x) > 20f || abs(totalDrag.y) > 20f)) {
+                                isHorizontalSwipe = abs(totalDrag.x) > abs(totalDrag.y) * 1.5f
+                            }
+                            
+                            // Don't consume the event to allow other gestures to work
+                        }
+                        
+                        // Check if we should trigger a page change after drag ends
+                        if (isHorizontalSwipe && !isSettingsMenuOpen) {
+                            val swipeThreshold = 100f
+                            
+                            if (abs(totalDrag.x) > swipeThreshold) {
+                                // Swipe left (negative x) or swipe right (positive x)
+                                if (totalDrag.x < 0) {
+                                    // Swipe left
+                                    if (readingDirection == LayoutDirection.Ltr) {
+                                        coroutineScope.launch { onNexPageClick() }
+                                    } else {
+                                        coroutineScope.launch { onPrevPageClick() }
+                                    }
+                                } else {
+                                    // Swipe right
+                                    if (readingDirection == LayoutDirection.Ltr) {
+                                        coroutineScope.launch { onPrevPageClick() }
+                                    } else {
+                                        coroutineScope.launch { onNexPageClick() }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             },
