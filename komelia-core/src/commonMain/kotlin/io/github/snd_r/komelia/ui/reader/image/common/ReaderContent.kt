@@ -88,6 +88,7 @@ fun ReaderContent(
 
     val topLevelFocus = remember { FocusRequester() }
     val volumeKeysNavigation = commonReaderState.volumeKeysNavigation.collectAsState().value
+    val swipeGesturesEnabled = commonReaderState.swipeGesturesEnabled.collectAsState().value
     var hasFocus by remember { mutableStateOf(false) }
     Box(
         Modifier
@@ -197,6 +198,7 @@ fun ReaderControlsOverlay(
     onSettingsMenuToggle: () -> Unit,
     contentAreaSize: IntSize,
     modifier: Modifier,
+    swipeGesturesEnabled: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -220,54 +222,69 @@ fun ReaderControlsOverlay(
                 contentAreaSize,
                 readingDirection,
                 onSettingsMenuToggle,
-                isSettingsMenuOpen
+                isSettingsMenuOpen,
+                swipeGesturesEnabled
             ) {
-                detectTapGestures { offset ->
-                    val actionWidth = contentAreaSize.width.toFloat() / 3
-                    when (offset.x) {
-                        in 0f..<actionWidth -> leftAction()
-                        in actionWidth..actionWidth * 2 -> centerAction()
-                        else -> rightAction()
+                // Only enable tap gestures if swipe gestures are disabled
+                if (!swipeGesturesEnabled) {
+                    detectTapGestures { offset ->
+                        val actionWidth = contentAreaSize.width.toFloat() / 3
+                        when (offset.x) {
+                            in 0f..<actionWidth -> leftAction()
+                            in actionWidth..actionWidth * 2 -> centerAction()
+                            else -> rightAction()
+                        }
+                    }
+                } else {
+                    // When swipe gestures are enabled, only handle center tap
+                    detectTapGestures { offset ->
+                        val actionWidth = contentAreaSize.width.toFloat() / 3
+                        if (offset.x in actionWidth..actionWidth * 2) {
+                            centerAction()
+                        }
                     }
                 }
             }
             .pointerInput(
                 readingDirection,
-                isSettingsMenuOpen
+                isSettingsMenuOpen,
+                swipeGesturesEnabled
             ) {
-                // Handle horizontal swipe gestures for page navigation
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    var totalDrag = Offset.Zero
-                    var isHorizontalSwipe = false
-                    
-                    // Only handle single-finger gestures
-                    if (currentEvent.changes.size == 1) {
-                        drag(down.id) { change ->
-                            val dragDelta = change.positionChange()
-                            totalDrag += dragDelta
-                            
-                            // Determine if this is a horizontal swipe based on initial movement
-                            if (!isHorizontalSwipe && (abs(totalDrag.x) > 20f || abs(totalDrag.y) > 20f)) {
-                                isHorizontalSwipe = abs(totalDrag.x) > abs(totalDrag.y) * 1.5f
+                // Only handle horizontal swipe gestures if enabled
+                if (swipeGesturesEnabled) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        var totalDrag = Offset.Zero
+                        var isHorizontalSwipe = false
+                        
+                        // Only handle single-finger gestures
+                        if (currentEvent.changes.size == 1) {
+                            drag(down.id) { change ->
+                                val dragDelta = change.positionChange()
+                                totalDrag += dragDelta
+                                
+                                // Determine if this is a horizontal swipe based on initial movement
+                                if (!isHorizontalSwipe && (abs(totalDrag.x) > 20f || abs(totalDrag.y) > 20f)) {
+                                    isHorizontalSwipe = abs(totalDrag.x) > abs(totalDrag.y) * 1.5f
+                                }
+                                
+                                // Don't consume the event to allow other gestures to work
                             }
                             
-                            // Don't consume the event to allow other gestures to work
-                        }
-                        
-                        // Check if we should trigger a page change after drag ends
-                        if (isHorizontalSwipe && !isSettingsMenuOpen) {
-                            val swipeThreshold = 100f
-                            
-                            if (abs(totalDrag.x) > swipeThreshold) {
-                                // Swipe left (negative x) = next page
-                                // Swipe right (positive x) = previous page
-                                if (totalDrag.x < 0) {
-                                    // Swipe left → next page
-                                    coroutineScope.launch { onNexPageClick() }
-                                } else {
-                                    // Swipe right → previous page
-                                    coroutineScope.launch { onPrevPageClick() }
+                            // Check if we should trigger a page change after drag ends
+                            if (isHorizontalSwipe && !isSettingsMenuOpen) {
+                                val swipeThreshold = 100f
+                                
+                                if (abs(totalDrag.x) > swipeThreshold) {
+                                    // Swipe left (negative x) = next page
+                                    // Swipe right (positive x) = previous page
+                                    if (totalDrag.x < 0) {
+                                        // Swipe left → next page
+                                        coroutineScope.launch { onNexPageClick() }
+                                    } else {
+                                        // Swipe right → previous page
+                                        coroutineScope.launch { onPrevPageClick() }
+                                    }
                                 }
                             }
                         }

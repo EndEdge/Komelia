@@ -51,6 +51,7 @@ class ImageReaderSettingsViewModel(
     val linearLightDownsampling = MutableStateFlow(false)
     val loadThumbnailsPreview = MutableStateFlow(false)
     val volumeKeysNavigation = MutableStateFlow(false)
+    val swipeGesturesEnabled = MutableStateFlow(true)
     val availableUpsamplingModes = availableUpsamplingModes()
     val availableDownsamplingKernels = availableReduceKernels()
 
@@ -62,6 +63,7 @@ class ImageReaderSettingsViewModel(
         linearLightDownsampling.value = settingsRepository.getLinearLightDownsampling().first()
         loadThumbnailsPreview.value = settingsRepository.getLoadThumbnailPreviews().first()
         volumeKeysNavigation.value = settingsRepository.getVolumeKeysNavigation().first()
+        swipeGesturesEnabled.value = settingsRepository.getSwipeGesturesEnabled().first()
         onnxRuntimeSettingsState.initialize()
     }
 
@@ -88,6 +90,11 @@ class ImageReaderSettingsViewModel(
     fun onVolumeKeysNavigationChange(enable: Boolean) {
         volumeKeysNavigation.value = enable
         screenModelScope.launch { settingsRepository.putVolumeKeysNavigation(enable) }
+    }
+
+    fun onSwipeGesturesEnabledChange(enable: Boolean) {
+        swipeGesturesEnabled.value = enable
+        screenModelScope.launch { settingsRepository.putSwipeGesturesEnabled(enable) }
     }
 
     fun onClearImageCache() {

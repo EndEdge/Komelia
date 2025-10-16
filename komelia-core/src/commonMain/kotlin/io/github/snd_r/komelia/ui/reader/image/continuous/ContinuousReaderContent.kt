@@ -73,6 +73,7 @@ fun BoxScope.ContinuousReaderContent(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val readingDirection = continuousReaderState.readingDirection.collectAsState().value
+    val swipeGesturesEnabled = continuousReaderState.readerState.swipeGesturesEnabled.collectAsState().value
 
     val layoutDirection = remember(readingDirection) {
         when (readingDirection) {
@@ -109,6 +110,7 @@ fun BoxScope.ContinuousReaderContent(
         contentAreaSize = areaSize,
         isSettingsMenuOpen = showSettingsMenu,
         onSettingsMenuToggle = { onShowSettingsMenuChange(!showSettingsMenu) },
+        swipeGesturesEnabled = swipeGesturesEnabled,
         modifier = Modifier.onKeyEvent { event ->
             var consumed = true
 

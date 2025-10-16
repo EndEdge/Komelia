@@ -162,6 +162,14 @@ class ActorReaderSettingsRepository(
         actor.transform { it.copy(volumeKeysNavigation = enable) }
     }
 
+    override fun getSwipeGesturesEnabled(): Flow<Boolean> {
+        return actor.mapState { it.swipeGesturesEnabled }
+    }
+
+    override suspend fun putSwipeGesturesEnabled(enable: Boolean) {
+        actor.transform { it.copy(swipeGesturesEnabled = enable) }
+    }
+
     override fun getUpscalerMode(): Flow<UpscaleMode> {
         return actor.mapState { it.ortUpscalerMode }
     }
