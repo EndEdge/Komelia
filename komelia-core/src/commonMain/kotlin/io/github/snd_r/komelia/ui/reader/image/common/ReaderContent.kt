@@ -260,21 +260,14 @@ fun ReaderControlsOverlay(
                             val swipeThreshold = 100f
                             
                             if (abs(totalDrag.x) > swipeThreshold) {
-                                // Swipe left (negative x) or swipe right (positive x)
+                                // Swipe left (negative x) = next page
+                                // Swipe right (positive x) = previous page
                                 if (totalDrag.x < 0) {
-                                    // Swipe left
-                                    if (readingDirection == LayoutDirection.Ltr) {
-                                        coroutineScope.launch { onNexPageClick() }
-                                    } else {
-                                        coroutineScope.launch { onPrevPageClick() }
-                                    }
+                                    // Swipe left → next page
+                                    coroutineScope.launch { onNexPageClick() }
                                 } else {
-                                    // Swipe right
-                                    if (readingDirection == LayoutDirection.Ltr) {
-                                        coroutineScope.launch { onPrevPageClick() }
-                                    } else {
-                                        coroutineScope.launch { onNexPageClick() }
-                                    }
+                                    // Swipe right → previous page
+                                    coroutineScope.launch { onPrevPageClick() }
                                 }
                             }
                         }
