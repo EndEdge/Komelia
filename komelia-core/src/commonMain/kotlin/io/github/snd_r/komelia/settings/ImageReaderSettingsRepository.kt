@@ -64,6 +64,9 @@ interface ImageReaderSettingsRepository {
     fun getVolumeKeysNavigation(): Flow<Boolean>
     suspend fun putVolumeKeysNavigation(enable: Boolean)
 
+    fun getSwipeGesturesEnabled(): Flow<Boolean>
+    suspend fun putSwipeGesturesEnabled(enable: Boolean)
+
     fun getUpscalerMode(): Flow<UpscaleMode>
     suspend fun putUpscalerMode(mode: UpscaleMode)
 

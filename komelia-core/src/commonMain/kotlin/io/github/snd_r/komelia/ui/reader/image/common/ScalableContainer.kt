@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.Orientation.Vertical
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
@@ -62,6 +63,7 @@ fun ScalableContainer(
     val scrollOrientation = scaleState.scrollOrientation.collectAsState().value ?: Vertical
     val scrollConfig = remember { platformScrollConfig() }
     val density = LocalDensity.current
+    
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -94,6 +96,25 @@ fun ScalableContainer(
                     }
                 }
 
+            }
+            .pointerInput(areaSize) {
+                // Handle double-tap to zoom in/out
+                detectTapGestures(
+                    onDoubleTap = { tapPosition ->
+                        val currentZoom = scaleState.zoom.value
+                        val minZoom = scaleState.scaleForFullVisibility() / scaleState.scaleFor100PercentZoom()
+                        val isZoomed = currentZoom > minZoom * 1.01f
+                        
+                        if (isZoomed) {
+                            // If zoomed, reset to minimum zoom
+                            scaleState.setZoom(minZoom, tapPosition - areaCenter)
+                        } else {
+                            // If not zoomed, zoom to 1.5x
+                            val targetZoom = minZoom * 1.5f
+                            scaleState.setZoom(targetZoom, tapPosition - areaCenter)
+                        }
+                    }
+                )
             }
             .pointerInput(areaSize) {
                 detectTransformGestures { event, centroid, pan, zoom, _ ->

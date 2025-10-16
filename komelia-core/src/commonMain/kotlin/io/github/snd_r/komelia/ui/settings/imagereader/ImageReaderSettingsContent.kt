@@ -27,6 +27,9 @@ fun ImageReaderSettingsContent(
     volumeKeysNavigation: Boolean,
     onVolumeKeysNavigationChange: (Boolean) -> Unit,
 
+    swipeGesturesEnabled: Boolean,
+    onSwipeGesturesEnabledChange: (Boolean) -> Unit,
+
     onCacheClear: () -> Unit,
     onnxRuntimeSettingsState: OnnxRuntimeSettingsState,
 ) {
@@ -47,6 +50,13 @@ fun ImageReaderSettingsContent(
                 checked = volumeKeysNavigation,
                 onCheckedChange = onVolumeKeysNavigationChange,
                 label = { Text("Volume keys navigation") },
+            )
+            
+            SwitchWithLabel(
+                checked = swipeGesturesEnabled,
+                onCheckedChange = onSwipeGesturesEnabledChange,
+                label = { Text("Swipe gestures for page navigation") },
+                supportingText = { Text("Enable left/right swipe to navigate pages. When enabled, tap navigation will be disabled.") },
             )
         }
 

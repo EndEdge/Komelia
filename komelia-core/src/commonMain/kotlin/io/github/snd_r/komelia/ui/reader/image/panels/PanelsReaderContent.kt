@@ -60,6 +60,7 @@ fun BoxScope.PanelsReaderContent(
     val currentContainerSize = screenScaleState.areaSize.collectAsState().value
 
     val coroutineScope = rememberCoroutineScope()
+    val swipeGesturesEnabled = panelsReaderState.readerState.swipeGesturesEnabled.collectAsState().value
     ReaderControlsOverlay(
         readingDirection = layoutDirection,
         onNexPageClick = panelsReaderState::nextPanel,
@@ -67,6 +68,8 @@ fun BoxScope.PanelsReaderContent(
         contentAreaSize = currentContainerSize,
         isSettingsMenuOpen = showSettingsMenu,
         onSettingsMenuToggle = { onShowSettingsMenuChange(!showSettingsMenu) },
+        swipeGesturesEnabled = swipeGesturesEnabled,
+        screenScaleState = screenScaleState,
         modifier = Modifier.onKeyEvent { event ->
             pagedReaderOnKeyEvents(
                 event = event,

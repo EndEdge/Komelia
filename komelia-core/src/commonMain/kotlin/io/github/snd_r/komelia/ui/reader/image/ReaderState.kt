@@ -101,6 +101,7 @@ class ReaderState(
     val flashWith = MutableStateFlow(ReaderFlashColor.BLACK)
 
     val volumeKeysNavigation = MutableStateFlow(false)
+    val swipeGesturesEnabled = MutableStateFlow(true)
 
     suspend fun initialize(bookId: KomgaBookId) {
         upsamplingMode.value = readerSettingsRepository.getUpsamplingMode().first()
@@ -114,6 +115,7 @@ class ReaderState(
         flashEveryNPages.value = readerSettingsRepository.getFlashEveryNPages().first()
         flashWith.value = readerSettingsRepository.getFlashWith().first()
         volumeKeysNavigation.value = readerSettingsRepository.getVolumeKeysNavigation().first()
+        swipeGesturesEnabled.value = readerSettingsRepository.getSwipeGesturesEnabled().first()
 
         appNotifications.runCatchingToNotifications {
             state.value = LoadState.Loading

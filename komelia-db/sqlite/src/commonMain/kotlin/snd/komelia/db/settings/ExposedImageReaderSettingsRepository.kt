@@ -43,6 +43,7 @@ class ExposedImageReaderSettingsRepository(database: Database) : ExposedReposito
                         upsamplingMode = UpsamplingMode.valueOf(it[ImageReaderSettingsTable.upsamplingMode]),
                         loadThumbnailPreviews = it[ImageReaderSettingsTable.loadThumbnailPreviews],
                         volumeKeysNavigation = it[ImageReaderSettingsTable.volumeKeysNavigation],
+                        swipeGesturesEnabled = it[ImageReaderSettingsTable.swipeGesturesEnabled],
                         ortUpscalerMode = UpscaleMode.valueOf(it[ImageReaderSettingsTable.ortUpscalerMode]),
                         ortUpscalerUserModelPath = it[ImageReaderSettingsTable.ortUpscalerUserModelPath],
                         ortUpscalerDeviceId = it[ImageReaderSettingsTable.ortDeviceId],
@@ -73,6 +74,7 @@ class ExposedImageReaderSettingsRepository(database: Database) : ExposedReposito
                 it[linearLightDownsampling] = settings.linearLightDownsampling
                 it[loadThumbnailPreviews] = settings.loadThumbnailPreviews
                 it[volumeKeysNavigation] = settings.volumeKeysNavigation
+                it[swipeGesturesEnabled] = settings.swipeGesturesEnabled
                 it[upsamplingMode] = settings.upsamplingMode.name
                 it[ortUpscalerMode] = settings.ortUpscalerMode.name
                 it[ortUpscalerUserModelPath] = settings.ortUpscalerUserModelPath

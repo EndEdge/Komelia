@@ -1,7 +1,10 @@
 package io.github.snd_r.komelia.ui.reader.image.common
 
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -18,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType.Companion.KeyUp
 import androidx.compose.ui.input.key.isAltPressed
@@ -25,9 +29,11 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import kotlin.math.abs
 import io.github.snd_r.komelia.platform.PlatformType.MOBILE
 import io.github.snd_r.komelia.ui.LocalPlatform
 import io.github.snd_r.komelia.ui.LocalWindowState
@@ -82,6 +88,7 @@ fun ReaderContent(
 
     val topLevelFocus = remember { FocusRequester() }
     val volumeKeysNavigation = commonReaderState.volumeKeysNavigation.collectAsState().value
+    val swipeGesturesEnabled = commonReaderState.swipeGesturesEnabled.collectAsState().value
     var hasFocus by remember { mutableStateOf(false) }
     Box(
         Modifier
@@ -191,6 +198,8 @@ fun ReaderControlsOverlay(
     onSettingsMenuToggle: () -> Unit,
     contentAreaSize: IntSize,
     modifier: Modifier,
+    swipeGesturesEnabled: Boolean = false,
+    screenScaleState: ScreenScaleState? = null,
     content: @Composable () -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -214,14 +223,78 @@ fun ReaderControlsOverlay(
                 contentAreaSize,
                 readingDirection,
                 onSettingsMenuToggle,
-                isSettingsMenuOpen
+                isSettingsMenuOpen,
+                swipeGesturesEnabled
             ) {
-                detectTapGestures { offset ->
-                    val actionWidth = contentAreaSize.width.toFloat() / 3
-                    when (offset.x) {
-                        in 0f..<actionWidth -> leftAction()
-                        in actionWidth..actionWidth * 2 -> centerAction()
-                        else -> rightAction()
+                // Only enable tap gestures if swipe gestures are disabled
+                if (!swipeGesturesEnabled) {
+                    detectTapGestures { offset ->
+                        val actionWidth = contentAreaSize.width.toFloat() / 3
+                        when (offset.x) {
+                            in 0f..<actionWidth -> leftAction()
+                            in actionWidth..actionWidth * 2 -> centerAction()
+                            else -> rightAction()
+                        }
+                    }
+                } else {
+                    // When swipe gestures are enabled, only handle center tap
+                    detectTapGestures { offset ->
+                        val actionWidth = contentAreaSize.width.toFloat() / 3
+                        if (offset.x in actionWidth..actionWidth * 2) {
+                            centerAction()
+                        }
+                    }
+                }
+            }
+            .pointerInput(
+                readingDirection,
+                isSettingsMenuOpen,
+                swipeGesturesEnabled,
+                screenScaleState
+            ) {
+                // Only handle horizontal swipe gestures if enabled
+                if (swipeGesturesEnabled && screenScaleState != null) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        var totalDrag = Offset.Zero
+                        var isHorizontalSwipe = false
+                        
+                        // Check if image is zoomed at the start of gesture
+                        val currentZoom = screenScaleState.zoom.value
+                        val minZoom = screenScaleState.scaleForFullVisibility() / screenScaleState.scaleFor100PercentZoom()
+                        val isImageZoomed = currentZoom > minZoom * 1.01f // Small threshold for floating point comparison
+                        
+                        // Only handle single-finger gestures and when image is not zoomed
+                        if (currentEvent.changes.size == 1 && !isImageZoomed) {
+                            drag(down.id) { change ->
+                                val dragDelta = change.positionChange()
+                                totalDrag += dragDelta
+                                
+                                // Determine if this is a horizontal swipe based on initial movement
+                                if (!isHorizontalSwipe && (abs(totalDrag.x) > 20f || abs(totalDrag.y) > 20f)) {
+                                    isHorizontalSwipe = abs(totalDrag.x) > abs(totalDrag.y) * 1.5f
+                                }
+                                
+                                // Don't consume the event to allow other gestures to work
+                            }
+                            
+                            // Check if we should trigger a page change after drag ends
+                            if (isHorizontalSwipe && !isSettingsMenuOpen) {
+                                val swipeThreshold = 100f
+                                
+                                if (abs(totalDrag.x) > swipeThreshold) {
+                                    // Swipe left (negative x) = next page
+                                    // Swipe right (positive x) = previous page
+                                    if (totalDrag.x < 0) {
+                                        // Swipe left → next page
+                                        coroutineScope.launch { onNexPageClick() }
+                                    } else {
+                                        // Swipe right → previous page
+                                        coroutineScope.launch { onPrevPageClick() }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             },
