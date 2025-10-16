@@ -69,6 +69,7 @@ fun BoxScope.PanelsReaderContent(
         isSettingsMenuOpen = showSettingsMenu,
         onSettingsMenuToggle = { onShowSettingsMenuChange(!showSettingsMenu) },
         swipeGesturesEnabled = swipeGesturesEnabled,
+        screenScaleState = screenScaleState,
         modifier = Modifier.onKeyEvent { event ->
             pagedReaderOnKeyEvents(
                 event = event,

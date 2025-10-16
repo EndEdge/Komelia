@@ -199,6 +199,7 @@ fun ReaderControlsOverlay(
     contentAreaSize: IntSize,
     modifier: Modifier,
     swipeGesturesEnabled: Boolean = false,
+    screenScaleState: ScreenScaleState? = null,
     content: @Composable () -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -248,17 +249,23 @@ fun ReaderControlsOverlay(
             .pointerInput(
                 readingDirection,
                 isSettingsMenuOpen,
-                swipeGesturesEnabled
+                swipeGesturesEnabled,
+                screenScaleState
             ) {
                 // Only handle horizontal swipe gestures if enabled
-                if (swipeGesturesEnabled) {
+                if (swipeGesturesEnabled && screenScaleState != null) {
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
                         var totalDrag = Offset.Zero
                         var isHorizontalSwipe = false
                         
-                        // Only handle single-finger gestures
-                        if (currentEvent.changes.size == 1) {
+                        // Check if image is zoomed at the start of gesture
+                        val currentZoom = screenScaleState.zoom.value
+                        val minZoom = screenScaleState.scaleForFullVisibility() / screenScaleState.scaleFor100PercentZoom()
+                        val isImageZoomed = currentZoom > minZoom * 1.01f // Small threshold for floating point comparison
+                        
+                        // Only handle single-finger gestures and when image is not zoomed
+                        if (currentEvent.changes.size == 1 && !isImageZoomed) {
                             drag(down.id) { change ->
                                 val dragDelta = change.positionChange()
                                 totalDrag += dragDelta

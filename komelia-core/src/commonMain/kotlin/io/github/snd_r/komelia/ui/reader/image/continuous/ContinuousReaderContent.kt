@@ -111,6 +111,7 @@ fun BoxScope.ContinuousReaderContent(
         isSettingsMenuOpen = showSettingsMenu,
         onSettingsMenuToggle = { onShowSettingsMenuChange(!showSettingsMenu) },
         swipeGesturesEnabled = swipeGesturesEnabled,
+        screenScaleState = screenScaleState,
         modifier = Modifier.onKeyEvent { event ->
             var consumed = true
 
